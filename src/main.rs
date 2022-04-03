@@ -92,15 +92,19 @@ fn main() -> Result<(), Error> {
 
     let lons: Vec<f64> = matches.values_of_t("x").expect("Needs lon boundaries!");
     for (i, l) in lons.into_iter().enumerate() {
-        println!("{}, {}", &i, &l)
+        println!("{%i}, {%l}")
     }
     let lats: Vec<f64> = matches.values_of_t("y").expect("Needs lat boundaries!");
     for (i, l) in lats.into_iter().enumerate() {
-        println!("{}, {}", &i, &l)
+        println!("{%i}, {%l}")
     }
 
     let vertices: i32 = matches.value_of_t("z").expect("Need vertices!");
-    println!("Value for vertices: {}", vertices);
+    println!("Value for vertices: {vertices}");
+
+    let hull = matches.is_present("convex_hull");
+
+    println!("hull = {hull}");
 
     return Ok(());
 }
@@ -115,7 +119,7 @@ fn make_poly() {
     };
 
     let poly: Polygon<f64> = p.build_polygon(true);
-    println!("{:#?}", poly)
+    println!("{poly:#?}")
 }
 
 #[cfg(test)]

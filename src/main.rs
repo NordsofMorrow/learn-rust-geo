@@ -1,10 +1,18 @@
 extern crate geo;
 
 mod lib;
-use polygonify::{Framework, Polygon};
+use polygonify::{Framework, GeoType};
 
 extern crate clap;
 use clap::{Arg, Command, Error};
+
+use geo::GeoNum;
+use num_traits::{Num, NumCast};
+
+extern crate geojson;
+extern crate rand;
+extern crate serde;
+extern crate serde_json;
 
 fn main() -> Result<(), Error> {
     let version = env!("CARGO_PKG_VERSION");
@@ -58,7 +66,7 @@ fn main() -> Result<(), Error> {
                 .multiple_occurrences(true)
                 .required(false)
                 .default_value("3")
-                .validator(|s| s.parse::<i32>())
+                .validator(|s| s.parse::<usize>())
                 .help("Maximum polygon vertices"),
         )
         .arg(
@@ -67,6 +75,13 @@ fn main() -> Result<(), Error> {
                 .long("hull")
                 .takes_value(false)
                 .help("Use the convex hull of the polygon"),
+        )
+        .arg(
+            Arg::new("collection")
+                .short('c')
+                .long("collection")
+                .takes_value(false)
+                .help("Return a GeometryCollection"),
         );
 
     let matches = match app.try_get_matches() {
@@ -90,37 +105,59 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let lons: Vec<f64> = matches.values_of_t("x").expect("Needs lon boundaries!");
-    for (i, l) in lons.into_iter().enumerate() {
-        println!("{%i}, {%l}")
-    }
-    let lats: Vec<f64> = matches.values_of_t("y").expect("Needs lat boundaries!");
-    for (i, l) in lats.into_iter().enumerate() {
-        println!("{%i}, {%l}")
-    }
+    let ends = constructor::<f64>(matches);
 
-    let vertices: i32 = matches.value_of_t("z").expect("Need vertices!");
-    println!("Value for vertices: {vertices}");
+    // let j = serde_json::to_string(&poly).expect("Bad JSON!");
+    // println!("{j:#?}");
 
-    let hull = matches.is_present("convex_hull");
-
-    println!("hull = {hull}");
-
-    return Ok(());
+    return Ok(ends);
 }
 
-fn make_poly() {
-    let p = Framework {
-        lon_min: 5.5,
-        lon_max: 6.5,
-        lat_min: 1.2,
-        lat_max: 1000.,
-        vertices: 10,
+fn constructor<T>(matches: clap::ArgMatches) -> ()
+where
+    T: std::ops::Mul<Output = T>
+        + Clone
+        + Num
+        + NumCast
+        + Copy
+        + PartialOrd
+        + GeoNum
+        + std::fmt::Display
+        + std::fmt::Debug
+        + std::str::FromStr
+        + rand::distributions::uniform::SampleUniform,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+{
+    let lons: Vec<T> = matches.values_of_t("x").expect("Needs lon boundaries!");
+    let lats: Vec<T> = matches.values_of_t("y").expect("Needs lat boundaries!");
+    let vertices: usize = matches.value_of_t("z").expect("Need vertices!");
+    let convex_hull = matches.is_present("convex_hull");
+    let gc = matches.is_present("collection");
+
+    let f: Framework<T> = Framework::new(lons, lats, vertices);
+    f.describe();
+
+    let poly = f.build(gc, convex_hull);
+    match poly {
+        Some(GeoType::GeometryCollection(..)) => println!("This is GeoCollection! {poly:#?}"),
+        Some(GeoType::Polygon(..)) => println!("This is Polygon! {poly:#?}"),
+        None => panic!("This should never happen"),
     };
-
-    let poly: Polygon<f64> = p.build_polygon(true);
-    println!("{poly:#?}")
+    ()
 }
+
+// fn make_poly() {
+//     let p = Framework {
+//         lon_min: 5.5,
+//         lon_max: 6.5,
+//         lat_min: 1.2,
+//         lat_max: 1000.,
+//         vertices: 10,
+//     };
+
+//     let poly: Polygon<f64> = p.build_polygon(true);
+//     println!("{poly:#?}")
+// }
 
 #[cfg(test)]
 mod tests {

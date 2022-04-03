@@ -88,7 +88,7 @@ mod tests {
         let vertices: bool = poly.coords_count() <= p.vertices as usize;
         assert!(vertices);
         let bounds = poly.bounding_rect().unwrap();
-        
+
         assert!(p.lon_min <= bounds.min().x);
         assert!(bounds.max().x <= p.lon_max);
         assert!(p.lat_min <= bounds.min().y);

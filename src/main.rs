@@ -4,17 +4,17 @@ mod lib;
 use polygonify::{Framework, Polygon};
 
 extern crate clap;
-use clap::{App, AppSettings, Arg, Error};
+use clap::{Arg, Command, Error};
 
 fn main() -> Result<(), Error> {
     let version = env!("CARGO_PKG_VERSION");
     let authors = env!("CARGO_PKG_AUTHORS");
 
-    let app = App::new("Polygonify")
+    let app = Command::new("Polygonify")
         .version(version)
         .author(authors)
         .about("Generate bounded polygons using Rust!")
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .arg(
             Arg::new("verbose")
                 .short('v')
@@ -35,7 +35,7 @@ fn main() -> Result<(), Error> {
                 .multiple_values(true)
                 .number_of_values(2)
                 .required(true)
-                .use_delimiter(true)
+                .use_value_delimiter(true)
                 .validator(|s| s.parse::<f64>())
                 .help("Longitude boundaries of the polygon"),
         )
@@ -46,7 +46,7 @@ fn main() -> Result<(), Error> {
                 .multiple_values(true)
                 .number_of_values(2)
                 .required(true)
-                .use_delimiter(true)
+                .use_value_delimiter(true)
                 .validator(|s| s.parse::<f64>())
                 .help("Latitude boundaries of the polygon"),
         )
@@ -71,14 +71,15 @@ fn main() -> Result<(), Error> {
 
     let matches = match app.try_get_matches() {
         Ok(matches) => matches,
-        Err(e) if e.kind == clap::ErrorKind::MissingRequiredArgument => {
-            println!("Polygonify failed to run: {:?}!", e.kind);
+        Err(e) if e.kind() == clap::ErrorKind::MissingRequiredArgument => {
+            println!("Polygonify failed to run: {:?}!", e.kind());
             return Ok(());
         }
         Err(e)
-            if e.kind == clap::ErrorKind::DisplayHelp
-                || e.kind == clap::ErrorKind::DisplayVersion
-                || e.kind == clap::ErrorKind::ValueValidation =>
+            if e.kind() == clap::ErrorKind::DisplayHelp
+                || e.kind() == clap::ErrorKind::DisplayVersion
+                || e.kind() == clap::ErrorKind::ValueValidation
+                || e.kind() == clap::ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand =>
         {
             e.exit()
         }

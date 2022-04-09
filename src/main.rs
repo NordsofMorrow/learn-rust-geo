@@ -1,13 +1,12 @@
 extern crate geo;
 
 mod lib;
-use polygonify::{Framework, GeoType};
 
 extern crate clap;
 use clap::{Arg, Command, Error};
 
-use geo::GeoNum;
-use num_traits::{Num, NumCast};
+// use geo::GeoNum;
+// use num_traits::{Num, NumCast};
 
 extern crate geojson;
 extern crate rand;
@@ -105,45 +104,23 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let ends = constructor::<f64>(matches);
+    let mut frame = lib::Framework::clap_constructor(matches);
+    frame.describe();
+
+    let poly = frame.build();
+
+    match poly {
+        Some(lib::GeoType::GeometryCollection(poly)) => {
+            println!("This is a GeoCollection! {poly:#?}")
+        }
+        Some(lib::GeoType::Polygon(poly)) => println!("This is a Polygon! {poly:#?}"),
+        None => panic!("This should never happen"),
+    };
 
     // let j = serde_json::to_string(&poly).expect("Bad JSON!");
     // println!("{j:#?}");
 
-    return Ok(ends);
-}
-
-fn constructor<T>(matches: clap::ArgMatches) -> ()
-where
-    T: std::ops::Mul<Output = T>
-        + Clone
-        + Num
-        + NumCast
-        + Copy
-        + PartialOrd
-        + GeoNum
-        + std::fmt::Display
-        + std::fmt::Debug
-        + std::str::FromStr
-        + rand::distributions::uniform::SampleUniform,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
-{
-    let lons: Vec<T> = matches.values_of_t("x").expect("Needs lon boundaries!");
-    let lats: Vec<T> = matches.values_of_t("y").expect("Needs lat boundaries!");
-    let vertices: usize = matches.value_of_t("z").expect("Need vertices!");
-    let convex_hull = matches.is_present("convex_hull");
-    let gc = matches.is_present("collection");
-
-    let f: Framework<T> = Framework::new(lons, lats, vertices);
-    f.describe();
-
-    let poly = f.build(gc, convex_hull);
-    match poly {
-        Some(GeoType::GeometryCollection(..)) => println!("This is GeoCollection! {poly:#?}"),
-        Some(GeoType::Polygon(..)) => println!("This is Polygon! {poly:#?}"),
-        None => panic!("This should never happen"),
-    };
-    ()
+    return Ok(());
 }
 
 // fn make_poly() {

@@ -5,22 +5,16 @@
 extern crate geo;
 extern crate rand;
 
-use geo::algorithm::convex_hull::ConvexHull;
-use geo::*;
-// use geojson::Geometry;
-// use geojson::Geometry;
+use core::fmt::Debug;
 use num_traits::{Num, NumCast};
+use std::vec;
+
+use geo::{algorithm::convex_hull::ConvexHull, CoordNum, Coordinate};
 use rand::prelude::*;
 
-pub use geo::{Geometry, GeometryCollection, Polygon};
-
-pub trait Sane<Bool> {
-    fn build_polygon(self) -> bool;
-}
+use geo::{Geometry, GeometryCollection, LineString, Polygon};
 
 // Basic polygon type
-#[derive(Debug)]
-
 pub struct Framework<T>
 where
     T: std::ops::Mul<Output = T> + Num + NumCast + Copy + PartialOrd + Clone + std::fmt::Display,
@@ -30,22 +24,18 @@ where
     pub lat_min: T,
     pub lat_max: T,
     pub vertices: usize,
+    pub convex_hull: bool,
+    pub collection: bool,
 }
 
-impl<'a, T> Framework<T>
-where
-    T: std::ops::Mul<Output = T>
-        + Clone
-        + Num
-        + NumCast
-        + Copy
-        + PartialOrd
-        + GeoNum
-        + std::fmt::Display
-        + std::fmt::Debug
-        + rand::distributions::uniform::SampleUniform,
-{
-    pub fn new(lons: Vec<T>, lats: Vec<T>, vertices: usize) -> Framework<T> {
+impl Framework<f64> {
+    fn new(
+        lons: Vec<f64>,
+        lats: Vec<f64>,
+        vertices: usize,
+        convex_hull: bool,
+        collection: bool,
+    ) -> Framework<f64> {
         let (lon_min, lon_max) = (lons[0], lons[1]);
         let (lat_min, lat_max) = (lats[0], lats[1]);
         Framework {
@@ -54,26 +44,27 @@ where
             lat_min,
             lat_max,
             vertices,
+            convex_hull,
+            collection,
         }
+    }
+
+    pub fn clap_constructor(matches: clap::ArgMatches) -> Framework<f64> {
+        let lons = matches.values_of_t("x").expect("Needs lon boundaries!");
+        let lats = matches.values_of_t("y").expect("Needs lat boundaries!");
+        let vertices = matches.value_of_t("z").expect("Need vertices!");
+        let convex_hull = matches.is_present("convex_hull");
+        let collection = matches.is_present("collection");
+        let f = Framework::new(lons, lats, vertices, convex_hull, collection);
+        f
     }
 
     pub fn describe(&self) {
         println!("lon_min: {}", &self.lon_min);
-
         println!("Value for vertices: {}", &self.vertices);
     }
 
-    pub fn build(self, gc: bool, convex_hull: bool) -> Option<GeoType<T>> {
-        let geo_var = match gc {
-            true => Some(GeoType::GeometryCollection(
-                self.build_geometrycollection(convex_hull),
-            )),
-            false => Some(GeoType::Polygon(self.build_polygon(convex_hull))),
-        };
-        geo_var
-    }
-
-    fn build_polygon(&self, convex_hull: bool) -> Polygon<T> {
+    pub fn build(&mut self) -> Option<GeoType<f64>> {
         if self.vertices < 3 {
             panic!("Minimum vertices is 3")
         }
@@ -87,28 +78,25 @@ where
             coords.push(c)
         }
 
-        let ls: LineString<T> = LineString(coords);
-        let mut p: Polygon<T> = Polygon::new(ls, vec![]);
+        let ls = LineString(coords);
+        let mut p = Polygon::new(ls, vec![]);
+        p = if self.convex_hull { p.convex_hull() } else { p };
 
-        p = if convex_hull { p.convex_hull() } else { p };
-        p
-    }
-
-    fn build_geometrycollection(&self, convex_hull: bool) -> GeometryCollection<T> {
-        let g = GeometryCollection(vec![geo::Geometry::Polygon(
-            self.build_polygon(convex_hull),
-        )]);
-        g
+        if !self.collection {
+            Some(GeoType::Polygon(p))
+        } else {
+            let gc = GeometryCollection::new_from(vec![Geometry::Polygon(p)]);
+            Some(GeoType::GeometryCollection(gc))
+        }
     }
 }
 
 #[derive(Debug)]
 pub enum GeoType<T>
 where
-    T: Num + NumCast + Clone + PartialOrd + Copy + std::fmt::Display + std::fmt::Debug,
+    T: Num + NumCast + CoordNum + Debug,
 {
     Polygon(Polygon<T>),
-    // Geometry(Geometry<f64>),
     GeometryCollection(GeometryCollection<T>),
 }
 

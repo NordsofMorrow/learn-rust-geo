@@ -1,17 +1,7 @@
-extern crate geo;
+use anyhow::Error;
+use clap::{Arg, Command};
 
-mod lib;
-
-extern crate clap;
-use clap::{Arg, Command, Error};
-
-// use geo::GeoNum;
-// use num_traits::{Num, NumCast};
-
-extern crate geojson;
-extern crate rand;
-extern crate serde;
-extern crate serde_json;
+use polygonify::{Framework, GeoType};
 
 fn main() -> Result<(), Error> {
     let version = env!("CARGO_PKG_VERSION");
@@ -100,21 +90,21 @@ fn main() -> Result<(), Error> {
 
         Err(e) => {
             println!("Something went really wrong!");
-            return Err(e);
+            return Err(anyhow::anyhow!(e));
         }
     };
 
-    let mut frame = lib::Framework::clap_constructor(matches);
+    let mut frame = Framework::clap_constructor(matches);
     frame.describe();
 
     let poly = frame.build();
 
     match poly {
-        Some(lib::GeoType::GeometryCollection(poly)) => {
+        Ok(GeoType::GeometryCollection(poly)) => {
             println!("This is a GeoCollection! {poly:#?}")
         }
-        Some(lib::GeoType::Polygon(poly)) => println!("This is a Polygon! {poly:#?}"),
-        None => panic!("This should never happen"),
+        Ok(GeoType::Polygon(poly)) => println!("This is a Polygon! {poly:#?}"),
+        Err(err) => return Err(err),
     };
 
     // let j = serde_json::to_string(&poly).expect("Bad JSON!");

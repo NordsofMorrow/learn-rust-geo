@@ -1,9 +1,9 @@
-use anyhow::Error;
+use anyhow::Result;
 use clap::{Arg, Command};
 
 use polygonify::{Framework, GeoType};
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
     let authors = env!("CARGO_PKG_AUTHORS");
 
@@ -29,9 +29,9 @@ fn main() -> Result<(), Error> {
             Arg::new("x")
                 .short('x')
                 .long("lon_bounds")
-                .multiple_values(true)
                 .number_of_values(2)
                 .required(true)
+                .allow_hyphen_values(true)
                 .use_value_delimiter(true)
                 .validator(|s| s.parse::<f64>())
                 .help("Longitude boundaries of the polygon"),
@@ -40,9 +40,9 @@ fn main() -> Result<(), Error> {
             Arg::new("y")
                 .short('y')
                 .long("lat_bounds")
-                .multiple_values(true)
                 .number_of_values(2)
                 .required(true)
+                .allow_hyphen_values(true)
                 .use_value_delimiter(true)
                 .validator(|s| s.parse::<f64>())
                 .help("Latitude boundaries of the polygon"),
@@ -52,8 +52,8 @@ fn main() -> Result<(), Error> {
                 .short('z')
                 .long("vertices")
                 .takes_value(true)
-                .multiple_occurrences(true)
                 .required(false)
+                .allow_hyphen_values(true)
                 .default_value("3")
                 .validator(|s| s.parse::<usize>())
                 .help("Maximum polygon vertices"),
@@ -75,10 +75,6 @@ fn main() -> Result<(), Error> {
 
     let matches = match app.try_get_matches() {
         Ok(matches) => matches,
-        Err(e) if e.kind() == clap::ErrorKind::MissingRequiredArgument => {
-            println!("Polygonify failed to run: {:?}!", e.kind());
-            return Ok(());
-        }
         Err(e)
             if e.kind() == clap::ErrorKind::DisplayHelp
                 || e.kind() == clap::ErrorKind::DisplayVersion
@@ -90,7 +86,7 @@ fn main() -> Result<(), Error> {
 
         Err(e) => {
             println!("Something went really wrong!");
-            return Err(anyhow::anyhow!(e));
+            e.exit();
         }
     };
 

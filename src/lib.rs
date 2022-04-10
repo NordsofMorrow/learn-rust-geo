@@ -46,8 +46,22 @@ impl Framework<f64> {
     }
 
     pub fn clap_constructor(matches: clap::ArgMatches) -> Framework<f64> {
-        let lons = matches.values_of_t("x").expect("Needs lon boundaries!");
-        let lats = matches.values_of_t("y").expect("Needs lat boundaries!");
+        let mut lons = matches
+            .values_of("x")
+            .expect("Needs lon boundaries!")
+            .into_iter()
+            .filter_map(|v| v.parse::<f64>().ok())
+            .collect::<Vec<f64>>();
+        lons.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let mut lats = matches
+            .values_of("y")
+            .expect("Needs lat boundaries!")
+            .into_iter()
+            .filter_map(|v| v.parse::<f64>().ok())
+            .collect::<Vec<f64>>();
+        lats.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
         let vertices = matches.value_of_t("z").expect("Need vertices!");
         let convex_hull = matches.is_present("convex_hull");
         let collection = matches.is_present("collection");
@@ -56,8 +70,8 @@ impl Framework<f64> {
     }
 
     pub fn describe(&self) {
-        println!("lon_min: {}", &self.lon_min);
-        println!("Value for vertices: {}", &self.vertices);
+        println!("lon_min: {lnm}", lnm = &self.lon_min);
+        println!("Value for vertices: {v}", v = &self.vertices);
     }
 
     pub fn build(&mut self) -> Result<geo_enums::GeoType<f64>> {
@@ -99,16 +113,30 @@ mod tests {
 
     #[test]
     fn make_poly() {
-        let p: Framework<f64> = Framework::new(5.5, 6.5, 1.2, 1000., 10);
+        let mut f: Framework<f64> = Framework::new(
+            Vec::from([5.5, 6.5]),
+            Vec::from([1.2, 300.0]),
+            1000,
+            false,
+            false,
+        );
 
-        let poly: Polygon<f64> = p.build_polygon(true);
-        let vertices: bool = poly.coords_count() <= p.vertices as usize;
-        assert!(vertices);
-        let bounds = poly.bounding_rect().unwrap();
+        let poly = f.build();
+        match poly {
+            Ok(GeoType::Polygon(poly)) => {
+                // f is consumed - rewrite this test
+                let vertices: bool = poly.coords_count() <= f.vertices as usize;
+                assert!(vertices);
 
-        assert!(p.lon_min <= bounds.min().x);
-        assert!(bounds.max().x <= p.lon_max);
-        assert!(p.lat_min <= bounds.min().y);
-        assert!(bounds.max().y <= p.lat_max);
+                let bounds = poly.bounding_rect().unwrap();
+                assert!(f.lon_min <= bounds.min().x);
+                assert!(bounds.max().x <= f.lon_max);
+                assert!(f.lat_min <= bounds.min().y);
+                assert!(bounds.max().y <= f.lat_max);
+                ()
+            }
+            Ok(GeoType::GeometryCollection(_)) => panic!(),
+            Err(_) => panic!(),
+        }
     }
 }

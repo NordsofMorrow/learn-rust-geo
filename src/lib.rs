@@ -65,8 +65,8 @@ impl Framework<f64> {
         let vertices = matches.value_of_t("z").expect("Need vertices!");
         let convex_hull = matches.is_present("convex_hull");
         let collection = matches.is_present("collection");
-        let f = Framework::new(lons, lats, vertices, convex_hull, collection);
-        f
+        
+        Framework::new(lons, lats, vertices, convex_hull, collection)
     }
 
     pub fn describe(&self) {
@@ -133,7 +133,7 @@ mod tests {
                 assert!(bounds.max().x <= f.lon_max);
                 assert!(f.lat_min <= bounds.min().y);
                 assert!(bounds.max().y <= f.lat_max);
-                ()
+                
             }
             Ok(GeoType::GeometryCollection(_)) => panic!(),
             Err(_) => panic!(),

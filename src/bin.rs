@@ -2,9 +2,7 @@ use wkt::ToWkt;
 
 use anyhow::Result;
 use clap::{Arg, Command};
-use serde_json;
 
-use geo_types;
 use polygonify::{Framework, GeoType};
 
 fn main() -> Result<()> {
@@ -103,9 +101,9 @@ fn main() -> Result<()> {
         Ok(GeoType::GeometryCollection(poly)) => {
             println!("This is a GeoCollection!\nWKT:");
 
-            let gt_geometry: geo::GeometryCollection<f64> = poly.into();
+            let gt_geometry: geo::GeometryCollection<f64> = poly;
             let j = gt_geometry[0].to_wkt().item;
-            println!("{}", j.to_string())
+            println!("{}", j)
         }
 
         Ok(GeoType::Polygon(poly)) => {
@@ -113,12 +111,12 @@ fn main() -> Result<()> {
 
             let gt_geometry: geo::Geometry<f64> = poly.into();
             let j = gt_geometry.to_wkt().item;
-            println!("{}", j.to_string())
+            println!("{}", j)
         }
         Err(err) => return Err(err),
     };
 
-    return Ok(());
+    Ok(())
 }
 
 // fn make_poly() {

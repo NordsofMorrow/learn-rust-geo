@@ -3,9 +3,9 @@ name = "polygonify"
 version = "0.1.0"
 edition = "2018"
 
-# [lib]
-# name = "polygonify"
-# path = "src/lib.rs"
+[lib]
+name = "polygonify"
+path = "src/lib.rs"
 
 [[bin]]
 name = "polygonify"
@@ -17,11 +17,10 @@ path = "src/bin.rs"
 [dependencies]
 anyhow = "1.0.56"
 clap = { version = "3.1.8", features = ["derive"] }
-geo = "0.19.0"
+geo = "0.20.1"
 geo-types = "0.7.4"
 num-traits = "0.2.14"
 rand = "0.8.5"
 serde = "1.0.136"
-serde-pickle = "1.1.0"
 serde_json = "1.0.79"
 wkt = "0.10.0"

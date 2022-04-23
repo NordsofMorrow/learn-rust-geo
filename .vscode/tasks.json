@@ -23,7 +23,10 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "rust: cargo watch"
+			"label": "rust: cargo watch",
+			"dependsOn": [
+				"rust: cargo clean"
+			]
 		},
 		{
 			"type": "cargo",

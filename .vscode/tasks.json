@@ -3,6 +3,14 @@
 	"tasks": [
 		{
 			"type": "cargo",
+			"command": "clean",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "rust: cargo clean"
+		},
+		{
+			"type": "cargo",
 			"command": "run",
 			"problemMatcher": [
 				"$rustc"
@@ -16,6 +24,20 @@
 				"$rustc"
 			],
 			"label": "rust: cargo watch"
+		},
+		{
+			"type": "cargo",
+			"command": "build",
+			"args": [
+				"--release"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "rust: cargo build release",
+			"dependsOn": [
+				"rust: cargo clean"
+			]
 		}
 	]
 }
